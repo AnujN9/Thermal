@@ -5,7 +5,17 @@
 #include <vector>
 #include <iostream>
 
+cv::Mat gray, edge;
 int detectSquareMesh(cv::Mat& image);
+int thresh_1 = 0, thresh_2 = 100;
+
+void Trackbar_threshold(int, void*)
+{
+    thresh_1 = cv::getTrackbarPos("Threshold 1", "Canny Edge");
+    thresh_2 = cv::getTrackbarPos("Threshold 2", "Canny Edge");
+    cv::Canny(gray, edge, thresh_1, thresh_2);
+    cv::imshow("Canny Edge", edge);
+}
 
 int main()
 {
@@ -22,21 +32,30 @@ int main()
         calibrationImages.push_back(image);
     }
 
-    cv::Size patternSize(4, 4);
-    std::vector<std::vector<cv::Point2f>> imagePoints;
-    for (auto& img : calibrationImages)
+    cv::namedWindow("Canny Edge", cv::WINDOW_AUTOSIZE);
+    cv::createTrackbar("Threshold 1", "Canny Edge", nullptr, 255, 0);
+    cv::createTrackbar("Threshold 2", "Canny Edge", nullptr, 255, 0);
+        
+
+    for (auto &img : calibrationImages)
     {
-        cv::Mat gray;
         cv::imshow("Image", img);
         cv::cvtColor(img, gray, cv::COLOR_BGR2GRAY);
         cv::imshow("Gray Image", gray);
         cv::bitwise_not(gray, gray);
         cv::imshow("Inverted image", gray);
         cv::waitKey(0);
-        cv::Mat edge;
-        cv::Canny(gray, edge, 127, 255, 3);
-        cv::imshow("Edges", edge);
-        cv::waitKey(0);
+
+        cv::setTrackbarPos("Threshold 1", "Canny Edge", 0);
+        cv::setTrackbarPos("Threshold 2", "Canny Edge", 100);
+        while (true)
+        {
+            Trackbar_threshold(0,0);
+            if (cv::waitKey(30) >= 0)
+            {
+                break;
+            }
+        }
         detectSquareMesh(edge);
     }
 
