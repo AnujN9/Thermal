@@ -159,8 +159,8 @@ int main() {
         if (k == 'c') {
 			img_cnt++;
             std::string filename = "thermal_image_" + std::to_string(img_cnt) + ".png";
-			// cv::imwrite(filename, image);
-			// std::cout << "Image saved" << std::endl;
+			cv::imwrite(filename, image);
+			std::cout << "Image saved" << std::endl;
         } else if (k >= 0) {
 			break;
 		}
