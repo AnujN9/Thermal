@@ -22,7 +22,7 @@ int main()
     std::vector<cv::Mat> calibrationImages;
     for (int i = 1; i <= 19; ++i)
     {
-        std::string filename = "images/thermal_image_" + std::to_string(i) + ".png";
+        std::string filename = "image_set_1/thermal_image_" + std::to_string(i) + ".png";
         cv::Mat image = cv::imread(filename, cv::IMREAD_COLOR);
         if (image.empty())
         {
