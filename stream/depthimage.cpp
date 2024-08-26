@@ -16,30 +16,117 @@
 #define PACKETS_PER_FRAME 60
 #define FRAME_SIZE_UINT16 (PACKET_SIZE_UINT16*PACKETS_PER_FRAME)
 #define FPS 27;
-#define PORT 8080
 
+/// \file depthimage.cpp
+/// \brief Program that streams images from the thermal and rgb cameras.
+/// \brief Saves thermal images to thermal_images and rgb images to images.
+
+/// \brief Function to describe how to use the command line arguments
+/// \param cmd Argument of the command line, here it is the program
+void printUsage(char *cmd)
+{
+	char *cmdname = basename(cmd);
+	printf(" Usage: %s [OPTION]...\n"
+		   " -h			display this help and exit.\n"
+		   " -port x		set the ip port (default: 8080).\n"
+		   " -mintemp x		sets a minimum value for scaling (suggestion: 27300).\n"
+		   " -maxtemp x		sets a maximum value for scaling (suggestion: 30800).\n"
+		   "			Temperature values for min and max are in hectoKelvin.\n"
+		   " Capture:		To capture images press c on the image window.\n"
+		   "			Saves raw grayscale and custom colormap images\n"
+		   "			to the thermal_images directory.\n"
+		   "			And saves RGB images to the images directory.\n"
+		   "", cmdname);
+	return;
+}
+
+/// \brief Converts the raw data to a thermal image and streams the rgb image of the realsense.
+/// \param argc Number of command-line arguments.
+/// \param argv Array of command-line arguments.
+/// \param port Port of the IP address.
+/// \param mintemp Minimum temperature to be scaled between 0 and 255.
+/// \param maxtemp Maximum temperature to be scaled between 0 and 255.
+/// \return 0 if successful, -1 if failure.
 int main(int argc, char * argv[])
 try
 {
     int sockfd;
     struct sockaddr_in servaddr, cliaddr;
 
-    int typeColormap = 3; // colormap_ironblack
-	int typeLepton = 3; // Lepton 3.x
-	unsigned int spiSpeed = 20 * 1000 * 1000; // SPI bus speed 20MHz
-	uint16_t loglevel = 0;
-	const int *selectedColormap = colormap_ironblack;
+    const int *selectedColormap = colormap_ironblack;
 	int selectedColormapSize = get_size_colormap_ironblack();
 	bool autoRangeMin = false;
 	bool autoRangeMax = false;
 	uint16_t rangeMin = 27300; // Minimum temperture range (temp / 100 - 273) celsius
-	uint16_t rangeMax = 33500; // Maximum temperture range
+	uint16_t rangeMax = 30800; // Maximum temperture range
 	int myImageWidth = 160;
 	int myImageHeight = 120;
 	int img_cnt = 0;
 	bool first = true;
+	uint16_t port = 8080;
 
-	uint8_t result[PACKET_SIZE*PACKETS_PER_FRAME];
+	for(int i=1; i < argc; i++)
+	{
+		if (strcmp(argv[i], "-h") == 0)
+		{
+			printUsage(argv[0]);
+			exit(0);
+		}
+		else if (strcmp(argv[i], "-port") == 0)
+		{
+			if (i + 1 != argc)
+			{
+				long int temp = std::strtol(argv[++i], nullptr, 10);
+				if (temp < 0 || temp > 65535){
+					std::cerr << "Error: Enter a valid Port." << std::endl;
+					exit(1);
+				}
+				port = static_cast<uint16_t>(temp);
+			}
+			else
+			{
+				std::cerr << "Error: Enter a valid Port." << std::endl;
+				exit(1);
+			}
+		}
+		else if (strcmp(argv[i], "-mintemp") == 0)
+		{
+			if (i + 1 != argc)
+			{
+				long int temp = std::strtol(argv[++i], nullptr, 10);
+				if (temp < 0 || temp > 65535){
+					std::cerr << "Error: Enter a temp between 0 and 65525." << std::endl;
+					exit(1);
+				}
+				rangeMin = temp;
+				autoRangeMin = false;
+			}
+			else
+			{
+				std::cerr << "Error: Enter a minimum temp (0 to 65535)." << std::endl;
+				exit(1);
+			}
+		}
+		else if (strcmp(argv[i], "-maxtemp") == 0)
+		{
+			if (i + 1 != argc)
+			{
+				long int temp = std::strtol(argv[++i], nullptr, 10);
+				if (temp < 0 || temp > 65535){
+					std::cerr << "Error: Enter a temp between 0 and 65525." << std::endl;
+					exit(1);
+				}
+				rangeMax = temp;
+				autoRangeMax = false;
+			}
+			else
+			{
+				std::cerr << "Error: Enter a maximum temp (0 to 65535)." << std::endl;
+				exit(1);
+			}
+		}
+	}
+
 	uint8_t shelf[4][PACKET_SIZE*PACKETS_PER_FRAME];
 
 	uint16_t minValue = rangeMin;
@@ -52,7 +139,6 @@ try
 	cv::Mat gray(myImageHeight, myImageWidth, CV_8UC1);
     cv::namedWindow("Thermal Image", cv::WINDOW_AUTOSIZE);
 
-    // Create socket
     if ((sockfd = socket(AF_INET, SOCK_DGRAM, 0)) < 0)
 	{
         std::cerr << "Socket creation failed" << std::endl;
@@ -62,12 +148,10 @@ try
     memset(&servaddr, 0, sizeof(servaddr));
     memset(&cliaddr, 0, sizeof(cliaddr));
     
-    // Set up server address
     servaddr.sin_family = AF_INET;
-    servaddr.sin_port = htons(PORT);
+    servaddr.sin_port = htons(port);
     servaddr.sin_addr.s_addr = INADDR_ANY;
 
-    // Bind the socket
     if (bind(sockfd, (const struct sockaddr *)&servaddr, sizeof(servaddr)) < 0)
 	{
         std::cerr << "Bind failed" << std::endl;
@@ -77,21 +161,21 @@ try
 
     socklen_t len = sizeof(cliaddr);
 
-    // Declare RealSense pipeline, encapsulating the actual device and sensors
+    // Declare RealSense pipeline
     rs2::pipeline pipe;
-
-    // Start streaming with default settings
-    pipe.start();
+    rs2::config cfg;
+    cfg.enable_stream(RS2_STREAM_DEPTH, 1280, 720, RS2_FORMAT_Z16);
+    cfg.enable_stream(RS2_STREAM_COLOR, 1280, 720, RS2_FORMAT_RGB8);
+    pipe.start(cfg);
+    rs2::align align_to_color(RS2_STREAM_COLOR);
 
     int frame_counter = 0;
 
     while (true)
     {
-		// Wait for the next set of frames from the camera
-        rs2::frameset frames = pipe.wait_for_frames();
-
-        // Get color frame
-        rs2::video_frame color_frame = frames.get_color_frame();
+		rs2::frameset frames = pipe.wait_for_frames();
+		frames = align_to_color.process(frames);
+		rs2::frame color_frame = frames.get_color_frame();
 
         for (int i = 0; i < 4; ++i)
 		{
@@ -118,21 +202,18 @@ try
 			{
 				maxValue = 0;
 			}
-			for(int iSegment = 1; iSegment <= 4; iSegment++)
+			for (int iSegment = 1; iSegment <= 4; iSegment++)
 			{
-				for(int i=0;i<FRAME_SIZE_UINT16;i++)
+				for (int i=0;i<FRAME_SIZE_UINT16;i++)
 				{
-					//skip the first 2 uint16_t's of every packet, they're 4 header bytes
-					if(i % PACKET_SIZE_UINT16 < 2)
+					if (i % PACKET_SIZE_UINT16 < 2)
 					{
 						continue;
 					}
 
-					//flip the MSB and LSB at the last second
 					uint16_t value = (shelf[iSegment - 1][i*2] << 8) + shelf[iSegment - 1][i*2+1];
 					if (value == 0)
 					{
-						// Why this value is 0?
 						continue;
 					}
 					if (autoRangeMax && (value > maxValue))
@@ -151,34 +232,30 @@ try
 		int row, column;
 		uint16_t value;
 		uint16_t valueFrameBuffer;
-		for(int iSegment = 1; iSegment <= 4; iSegment++)
+		for (int iSegment = 1; iSegment <= 4; iSegment++)
 		{
 			int ofsRow = 30 * (iSegment - 1);
-			for(int i=0;i<FRAME_SIZE_UINT16;i++)
+			for (int i=0;i<FRAME_SIZE_UINT16;i++)
 			{
-				//skip the first 2 uint16_t's of every packet, they're 4 header bytes
-				if(i % PACKET_SIZE_UINT16 < 2)
+				if (i % PACKET_SIZE_UINT16 < 2)
 				{
 					continue;
 				}
 
-				//flip the MSB and LSB at the last second
 				valueFrameBuffer = (shelf[iSegment - 1][i*2] << 8) + shelf[iSegment - 1][i*2+1];
 				if (valueFrameBuffer == 0)
 				{
-					// Why this value is 0?
 					n_zero_value_drop_frame++;
 					break;
 				}
 
-				//
 				if (!autoRangeMin && (valueFrameBuffer <= minValue))
 				{
-					value = minValue;
+					value = 0;
 				}
 				else if (!autoRangeMax && (valueFrameBuffer > maxValue))
 				{
-					value = maxValue;
+					value = 255;
 				}
 				else
 				{
@@ -207,37 +284,22 @@ try
 			n_zero_value_drop_frame = 0;
 		}
 
-        // Get the dimensions of the frame
-        const int width = color_frame.get_width();
-        const int height = color_frame.get_height();
-
-        // Create OpenCV matrix from color image (assume 8-bit RGB image)
-        cv::Mat color_image(cv::Size(width, height), CV_8UC3, (void*)color_frame.get_data(), cv::Mat::AUTO_STEP);
-
-        // Convert the image from RGB to BGR format (since OpenCV uses BGR by default)
-        cv::cvtColor(color_image, color_image, cv::COLOR_RGB2BGR);
-
-        // Display the color image in a window
-        cv::imshow("Color Image", color_image);
-
-        // Wait for keypress for 1ms, 'c' to capture and 'q' to quit
-        char key = cv::waitKey(1);
-
-        cv::imshow("Thermal Image", image);
+        cv::Mat color_image(cv::Size(1280, 720), CV_8UC3, (void*)color_frame.get_data(), cv::Mat::AUTO_STEP);
+		cv::cvtColor(color_image, color_image, cv::COLOR_RGB2BGR);
+		cv::imshow("Color Image", color_image);
+		char key = cv::waitKey(1);
+		cv::imshow("Thermal Image", image);
 
         if (key == 'c' || key == 'C')
         {
             // Save the color image to disk when 'c' is pressed
-            std::string filename = "color_image_" + std::to_string(frame_counter) + ".png";
-            cv::imwrite(filename, color_image);
-
-            std::cout << "Saved color image: " << filename << std::endl;
-            frame_counter++;
-
             img_cnt++;
-            filename = "thermal_image_" + std::to_string(img_cnt) + ".png";
+            std::string filename = "images/color_image_" + std::to_string(img_cnt) + ".png";
+            cv::imwrite(filename, color_image);
+			std::cout << "Saved color image: " << filename << std::endl;
+			filename = "thermal_images/thermal_image_" + std::to_string(img_cnt) + ".png";
 			cv::imwrite(filename, image);
-			filename = "thermal_grayimage_" + std::to_string(img_cnt) + ".png";
+			filename = "thermal_images/thermal_grayimage_" + std::to_string(img_cnt) + ".png";
 			cv::imwrite(filename, gray);
 			std::cout << "Image saved" << std::endl;
         }
@@ -247,7 +309,6 @@ try
             break;
         }
     }
-    // Close the socket
     close(sockfd);
     return 0;
 }

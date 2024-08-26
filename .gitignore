@@ -4,5 +4,6 @@
 **/__pycache__/
 **/build/
 **/image_set_*
-**/extrinsic_images
+**/*images
 **/tmp
+**/test
