@@ -4,6 +4,7 @@
 **/__pycache__/
 **/build/
 **/image_set_*
-**/*images
+**/color_images
+**/thermal_images
 **/tmp
 **/test

@@ -156,14 +156,14 @@ int main(int argc, char **argv)
         cerr << "Error: Enter the number of images. Check options with -h" << endl;
         exit(1);
     }
-
+    Size patternSize;
     if (pattern == 1)
     {
-        Size patternSize(row - 1, column - 1);
+        patternSize = Size(row - 1, column - 1);
     }
     else
     {
-        Size patternSize(row, column);
+        patternSize = Size(row, column);
     }
     vector<vector<Point2f>> imagePoints;
     vector<vector<Point3f>> objectPoints;

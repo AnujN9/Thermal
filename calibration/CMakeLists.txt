@@ -13,6 +13,8 @@ find_package(realsense2 REQUIRED)
 include_directories(${OpenCV_INCLUDE_DIRS})
 
 # Define the Image directory for calibration
+file(MAKE_DIRECTORY ${CMAKE_SOURCE_DIR}/thermal_images)
+file(MAKE_DIRECTORY ${CMAKE_SOURCE_DIR}/color_images)
 add_definitions(-DTHERMAL_IMAGE_DIRECTORY="${CMAKE_SOURCE_DIR}/thermal_images")
 add_definitions(-DIMAGE_DIRECTORY="${CMAKE_SOURCE_DIR}/color_images")
 

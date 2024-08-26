@@ -12,7 +12,7 @@ make
 
 ### Usage
 
-To stream the point cloud and the thermal image with a custom colormap
+To stream the point cloud and the thermal image with a custom colormap, run
 
 ```
 ./thermalPC
@@ -21,4 +21,10 @@ To stream the point cloud and the thermal image with a custom colormap
     -maxtemp x      the maximum temperature used for scaling
 ```
 
-To save the point cloud press 's' on the image window and it will save it to thermal.pcd in the build directory
+Save the point cloud by pressing 's' on the image window and it will save it to thermal.pcd in the build directory
+
+To load that point cloud, run
+
+```
+./loadPC
+```
