@@ -21,6 +21,8 @@ I have made a [package](https://github.com/AnujN9/LeptonModule/tree/master/softw
 
 I am currently working on a [package](https://github.com/AnujN9/ThermalProject_ROS) port all this into ROS 2.
 
+I have added a project.repos which contains all 3 repositories. ```vcs import < project.repos``` to get all at once.
+
 ## Project Flow
 
 ### Data
