@@ -2,6 +2,10 @@
 
 ### Installation
 
+NEEDED PCL 1.14
+
+Install [pcl 1.14](https://github.com/PointCloudLibrary/pcl/releases) using this [guide](https://pcl.readthedocs.io/projects/tutorials/en/latest/compiling_pcl_posix.html) first.
+
 Run the following command to build this package to create a PointCloud using the depth image from a RealSense D435i and project the thermal data from a Lepton 3.1R
 
 ```

@@ -6,7 +6,9 @@ https://github.com/user-attachments/assets/0584e4b3-5929-4763-acd6-b2016e8b9847
 
 ## Package List
 
-There are 3 main packages in this project each with their own builds. Apart from this you will need the Lepton 3.1R thermal camera and a RaspberryPi to stream the thermal data from the camera to your server. I have made a [package](https://github.com/AnujN9/LeptonModule/tree/master/software/raspberrypi_video_network) that sends the data from the RaspberryPi via a UDP socket. 
+There are 3 main packages in this project each with their own builds. Apart from this you will need the Lepton 3.1R thermal camera and a RaspberryPi to stream the thermal data from the camera to your server.
+
+I have made a [package](https://github.com/AnujN9/LeptonModule/tree/master/software/raspberrypi_video_network) that sends the data from the RaspberryPi via a UDP socket. 
 
 - stream - streams images and can save the images
     - streams raw data from the Lepton and converts it to an image
@@ -16,6 +18,8 @@ There are 3 main packages in this project each with their own builds. Apart from
     - calibration of the extrinsics between the thermal camera and the RealSense. Saves to an extrinsic.xml file.
 - pointcloud - generates a point cloud from the depth data and thermal data
     - creates a point cloud where the depth data determines the position and the thermal data determines the color of points based on a colormap. Also capable of saving the point cloud and loading it seperately.
+
+I am currently working on a [package](https://github.com/AnujN9/ThermalProject_ROS) port all this into ROS 2.
 
 ## Project Flow
 
