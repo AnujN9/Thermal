@@ -21,7 +21,7 @@ I have made a [package](https://github.com/AnujN9/LeptonModule/tree/master/softw
 
 I am currently working on a [package](https://github.com/AnujN9/ThermalProject_ROS) port all this into ROS 2.
 
-I have added a project.repos which contains all 3 repositories. ```vcs import < project.repos``` to get all at once.
+I have added a project.repos which contains all 3 repositories. ```vcs import --input https://raw.githubusercontent.com/AnujN9/ThermalProject/main/project.repos``` to download all at once into the directory.
 
 ## Project Flow
 
